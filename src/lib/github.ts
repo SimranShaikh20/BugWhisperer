@@ -13,9 +13,9 @@ export interface RawIssue {
 }
 
 export async function fetchIssues(owner: string, repo: string, limit = 5) {
-  const token = process.env.GITHUB_TOKEN;
+  const token = await getGithubToken();
   const headers: Record<string, string> = {
-    Accept: "application/vnd.github+json",
+    Accept: "application/vnd.github.v3+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -37,4 +37,17 @@ export async function fetchIssues(owner: string, repo: string, limit = 5) {
       body: i.body ?? "",
       labels: i.labels.map((l) => (typeof l === "string" ? l : l.name)),
     }));
+}
+
+async function getGithubToken(): Promise<string | undefined> {
+  // Cloudflare Workers: read secret from the Worker env binding.
+  try {
+    // @ts-expect-error - cloudflare:workers is provided by the Worker runtime
+    const mod = (await import("cloudflare:workers")) as { env?: Record<string, string | undefined> };
+    const fromCf = mod.env?.GITHUB_TOKEN;
+    if (fromCf) return fromCf;
+  } catch {
+    // Not running on Cloudflare (e.g. local Node dev) — fall through.
+  }
+  return process.env.GITHUB_TOKEN;
 }
