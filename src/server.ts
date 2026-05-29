@@ -7,6 +7,12 @@ type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
 };
 
+declare global {
+  // Runtime bindings passed by the Worker fetch handler, used by server helpers.
+  // eslint-disable-next-line no-var
+  var __BUGWHISPERER_WORKER_ENV__: Record<string, string | undefined> | undefined;
+}
+
 let serverEntryPromise: Promise<ServerEntry> | undefined;
 
 async function getServerEntry(): Promise<ServerEntry> {
@@ -69,6 +75,7 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      globalThis.__BUGWHISPERER_WORKER_ENV__ = env as Record<string, string | undefined>;
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);

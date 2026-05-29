@@ -86,7 +86,8 @@ export const analyzeRepo = createServerFn({ method: "POST" })
     if (!apiKey) throw new Error("Missing GROQ_API_KEY on the server.");
 
     const { owner, repo } = parseRepoUrl(data.repo_url);
-    const issues = await fetchIssues(owner, repo, 5);
+    const githubToken = process.env.GITHUB_TOKEN;
+    const issues = await fetchIssues(owner, repo, githubToken, 5);
 
     const analyzed = [];
     for (let i = 0; i < issues.length; i++) {
